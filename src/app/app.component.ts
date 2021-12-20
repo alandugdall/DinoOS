@@ -21,30 +21,24 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   private unsubscribe$ = new Subject<void>();
   private context: CanvasRenderingContext2D;
   private readonly crosshairSize = 25;
-  private circleImage = new BehaviorSubject<HTMLImageElement>({} as HTMLImageElement);
+  private readonly designResoulution = { width: 2560, height: 1440 };
+  private circleImage: HTMLImageElement;
   private cities: City[] = [
-    { 
-      name: 'London',
-      location: {
-        x: 1165, y: 450
-      }
-    }, { 
-      name: 'New York',
-      location: {
-        x: 745, y: 580
-      }
-    }, { 
-      name: 'Paris',
-      location: {
-        x: 1175, y: 490
-      }
-    },
+    { name: 'London', location: { x: 1165, y: 450 } },
+    { name: 'New York', location: { x: 745, y: 580 } },
+    { name: 'Paris', location: { x: 1175, y: 490 } },
+    { name: 'Rome', location: { x: 1250, y: 530 } },
+    { name: 'Toronto', location: { x: 700, y: 530 } },
+    { name: 'Nuuk', location: { x: 860, y: 340 } },
+    { name: 'Sydney', location: { x: 2245, y: 1100 } },
+    { name: 'Rio de Janeiro', location: { x: 892, y: 1050 } }
   ];
 
   loadImage() {
     const image = new Image();
     image.onload = () => {
-      this.circleImage.next(image);
+      this.circleImage = image;
+      this.drawCities();
     };
     image.src = '/assets/circle_20px.png';
   }
@@ -56,8 +50,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.context.canvas.height = window.innerHeight;
 
     this.resize$.pipe(
-      takeUntil(this.unsubscribe$))
-    .subscribe(e => {
+      takeUntil(this.unsubscribe$)
+    ).subscribe(e => {
       const w: Window = e.target as Window;
       this.context.canvas.width = w.innerWidth;
       this.context.canvas.height = w.innerHeight;
@@ -72,13 +66,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           crosshairSize: this.crosshairSize
         };
       }),
-      takeUntil(this.unsubscribe$))
-    .subscribe(position => {
-      this.drawCrosshairs(position);
+      takeUntil(this.unsubscribe$)
+    ).subscribe(position => {
+      this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
       this.drawCities();
+      this.drawCrosshairs(position);
     });
-
-    this.drawCities();
   }
  
   ngOnDestroy(): void {
@@ -87,23 +80,19 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   drawCities() {
-    this.circleImage.pipe(filter(image => {
-      return !!image.currentSrc;
-    }), take(1)).subscribe(image => {
+    if (this.circleImage) {
       this.cities.forEach(city => {
-        const x = city.location.x * (window.innerWidth / 2560);
-        const y = city.location.y * (window.innerHeight / 1440);
-        this.context.drawImage(image, x, y, image.width, image.height);
+        const x = city.location.x * (window.innerWidth / this.designResoulution.width);
+        const y = city.location.y * (window.innerHeight / this.designResoulution.height);
+        this.context.drawImage(this.circleImage, x, y, this.circleImage.width, this.circleImage.height);
         this.context.font = "24px Roboto";
         this.context.fillStyle = 'red';
         this.context.fillText(city.name, x + 22, y + 19);
-      })
-    });
+      });
+    }
   }
 
   drawCrosshairs(options: { top: number, left: number, crosshairSize: number }) {
-    this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
-
     // set line stroke and line width
     this.context.strokeStyle = 'red';
     this.context.lineWidth = 2;
