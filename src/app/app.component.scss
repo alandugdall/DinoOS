@@ -10,3 +10,24 @@ canvas {
     height: 100%;
     width: 100%;
 }
+
+.dinosaur-picture {
+    position: absolute;
+    bottom: 0px;
+    padding-left: 10px;
+    padding-bottom: 10px;
+    outline: white;
+}
+
+.dinosaur-synopsis {
+    position: absolute;
+    bottom: 10px;
+    width: 50%;
+    left: 25%;
+    color: aqua;
+    font-family: Roboto;
+    font-size: larger;
+    border: 1px solid aqua;
+    padding: 10px;
+    background: #000000cc;
+}

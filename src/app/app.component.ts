@@ -1,5 +1,8 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { fromEvent, interval, map, startWith, Subject, Subscription, takeUntil, takeWhile } from 'rxjs';
+import { Howl } from 'howler';
+import { DinosaurService } from './dinosaur.service';
+import { Dinosaur } from './dinosaur';
 
 interface City {
   name: string;
@@ -15,7 +18,6 @@ interface Position {
   crosshairSize: number;
 }
 
-
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -24,7 +26,6 @@ interface Position {
 export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('canvas') private canvas: ElementRef;
   private animating$: Subscription;
-  private timer$: Subscription;
   private mouseMove$ = fromEvent<MouseEvent>(document, 'mousemove');
   private resize$ = fromEvent<Event>(window, 'resize');
   private click$ = fromEvent<PointerEvent>(document, 'click');
@@ -53,6 +54,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   ];
   private position: Position = { left: 0, top: 0, crosshairSize: this.crosshairSize };
   private city: City;
+  public dinosaur: Dinosaur | null;
+  private dinosaurs: Dinosaur[];
+
+  constructor(private dinosaurService: DinosaurService) {
+    this.dinosaurs = dinosaurService.dinosaurs;
+  }
 
   private loadImages() {
     const image = new Image();
@@ -67,6 +74,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
   }
 
+  private randomElement<T>(arr: Array<T>): T {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
   public ngAfterViewInit(): void {
     this.context = this.canvas.nativeElement.getContext('2d');
     this.context.canvas.width = window.innerWidth;
@@ -74,13 +85,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
     this.loadImages();
     
-    this.timer$ = interval(5000).pipe(
+    interval(1000 * 60 * 15).pipe(
       startWith(0),
       takeUntil(this.unsubscribe$)
     ).subscribe(() => {
-      let city = this.cities[Math.floor(Math.random() * this.cities.length)];
+      let city = this.randomElement(this.cities);
       while (city === this.city) {
-        city = this.cities[Math.floor(Math.random() * this.cities.length)];
+        city = this.randomElement(this.cities);
       }
       this.city = city;
       this.clear();
@@ -89,9 +100,17 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       const y = city.location.y * (window.innerHeight / this.designResoulution.height);
       const position = { top: y + 10, left: x + 10, crosshairSize: this.crosshairSize };
       this.animateCrosshairs(position);
+      this.dinosaur = null;
+      interval(1000 * 60 * 5).pipe(
+        takeUntil(this.unsubscribe$))
+      .subscribe(() => {
+        this.clear();
+        this.drawCities();
+        this.dinosaur = null;
+      });
     });
 
-    /*this.click$.pipe(
+    this.click$.pipe(
       takeUntil(this.unsubscribe$)
     ).subscribe(e => {
       const x = e.pageX * (this.designResoulution.width / window.innerWidth);
@@ -101,7 +120,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       const position = { top: e.pageY, left: e.pageX, crosshairSize: this.crosshairSize };
       this.animateCrosshairs(position);
       
-    });*/
+    });
     
     this.resize$.pipe(
       takeUntil(this.unsubscribe$)
@@ -128,6 +147,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     });
   }
  
+  click() {
+    this.playAudio();
+  }
+
   public ngOnDestroy(): void {
     this.unsubscribe$.next();
     this.unsubscribe$.unsubscribe();
@@ -146,7 +169,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   }
  
-
   private animateCrosshairs(newPosition: Position) {
     if (!this.animating$ || this.animating$.closed) {
       this.animating$ = interval(16).pipe(
@@ -171,10 +193,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           this.drawCrosshairs({ left: x, top: y, crosshairSize: this.crosshairSize });
         },
         complete: () => {
+          this.dinosaur = this.randomElement(this.dinosaurService.dinosaurs);
           this.position = newPosition;
           this.clear();
           this.drawCities();
           this.drawCrosshairs(newPosition);
+          this.playAudio();
         }
       });
     }
@@ -216,5 +240,19 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.context.lineTo(position.left + window.screen.width, position.top);
 
     this.context.stroke();
+  }
+
+  private playAudio() {
+    let sound = new Howl({ src: ['assets/sounds/test.wav'] });
+    console.log('poop');
+    sound.play()
+
+    
+      /*let audio = new Audio();
+      audio.src = "assets/audio/test.wav";
+      audio.load();
+      audio.play();*/
+    
+
   }
 }

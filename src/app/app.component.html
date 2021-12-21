@@ -1,6 +1,14 @@
 
   <div class="container">
-    <canvas #canvas>
-
+    <canvas #canvas (click)="click()">
     </canvas>
+
+    <div class="dinosaur-picture" *ngIf="dinosaur">
+      <img [src]="dinosaur | pictureName">
+    </div>
+
+    <div class="dinosaur-synopsis" *ngIf="dinosaur">
+      <h1>{{dinosaur.name}}</h1>
+      <p>{{dinosaur.synopsis}}</p>
+    </div>
 </div>
